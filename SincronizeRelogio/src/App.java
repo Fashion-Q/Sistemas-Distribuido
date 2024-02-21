@@ -7,7 +7,9 @@ public class App {
         LocalDateTime[] timeZone = getDateTimes();
 		for(int i=0;i< udp.length;i++)
 		{
-			udp[i] = new Thread(new ServidorUDP(6000, i + 6000,timeZone[i],udp.length));
+            //Master eh porta 6000, o resto vai ser 6001, 6002...
+			udp[i] = new Thread(new ServidorUDP(i +6000, 6000,timeZone[i]));
+            udp[i].start();
 		}
     }
     
