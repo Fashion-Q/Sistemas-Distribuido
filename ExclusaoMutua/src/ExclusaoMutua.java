@@ -23,15 +23,6 @@ public class ExclusaoMutua implements Runnable {
 
     @Override
     public void run() {
-        if (pathAtual.endsWith("src")) {
-            pathAtual = pathAtual.substring(0, pathAtual.length() - 4); // Remova os últimos 4 caracteres ("src\")
-            pathAtual+="\\areacritica\\";
-        }
-        else
-        {
-            System.err.println("Algo deu errado: " + pathAtual);
-            return;
-        }
         while (!acesseiRegiaoCritica) {
             esperandoServidorFicarDisponivel();
             if (encerrarPrograma)
@@ -49,13 +40,14 @@ public class ExclusaoMutua implements Runnable {
 
     public void acessandoRegiaoCritica() {
         try {
-            FileWriter file = new FileWriter(pathAtual + "master.txt", true);
+            FileWriter file = new FileWriter(pathAtual + "\\" +   "master.txt", true);
             LocalDateTime horaAtual = LocalDateTime.now();
             String horaString = horaAtual.toString();
             file.write("Solicitao feita pelo id: " + id + " no tempo: " +horaString + "\n");
             file.close();
         } catch (Exception e) {
-            System.err.println("Excessao");
+            System.err.println("Nao foi possivel localizar o arquivo.");
+            return;
         }
         try {
             sleep(300);

@@ -22,7 +22,7 @@ public class Master implements Runnable {
         while (temSolicitacoes) {
             solicitacaoDizendoQueServidorEstaDisponivel();
             coletandoSolicitacoesParaAreaCritica();
-            if(identificarThreads.size() == 0)
+            if(identificarThreads.size() == 0) // saber se nao tem ninguem mais esperando
             {
                 break;
             }
