@@ -1,0 +1,14 @@
+C:\facul\periodo 7\Sistemas Distribuidos\versao-simplificada-thread\Sistemas-Distribuido\ProjetoSD\ServidorJogoDaVelha\ServidorJogoDaVelha\bin\Debug\net6.0\ServidorJogoDaVelha.exe
+C:\facul\periodo 7\Sistemas Distribuidos\versao-simplificada-thread\Sistemas-Distribuido\ProjetoSD\ServidorJogoDaVelha\ServidorJogoDaVelha\bin\Debug\net6.0\ServidorJogoDaVelha.deps.json
+C:\facul\periodo 7\Sistemas Distribuidos\versao-simplificada-thread\Sistemas-Distribuido\ProjetoSD\ServidorJogoDaVelha\ServidorJogoDaVelha\bin\Debug\net6.0\ServidorJogoDaVelha.runtimeconfig.json
+C:\facul\periodo 7\Sistemas Distribuidos\versao-simplificada-thread\Sistemas-Distribuido\ProjetoSD\ServidorJogoDaVelha\ServidorJogoDaVelha\bin\Debug\net6.0\ServidorJogoDaVelha.dll
+C:\facul\periodo 7\Sistemas Distribuidos\versao-simplificada-thread\Sistemas-Distribuido\ProjetoSD\ServidorJogoDaVelha\ServidorJogoDaVelha\bin\Debug\net6.0\ServidorJogoDaVelha.pdb
+C:\facul\periodo 7\Sistemas Distribuidos\versao-simplificada-thread\Sistemas-Distribuido\ProjetoSD\ServidorJogoDaVelha\ServidorJogoDaVelha\obj\Debug\net6.0\ServidorJogoDaVelha.GeneratedMSBuildEditorConfig.editorconfig
+C:\facul\periodo 7\Sistemas Distribuidos\versao-simplificada-thread\Sistemas-Distribuido\ProjetoSD\ServidorJogoDaVelha\ServidorJogoDaVelha\obj\Debug\net6.0\ServidorJogoDaVelha.AssemblyInfoInputs.cache
+C:\facul\periodo 7\Sistemas Distribuidos\versao-simplificada-thread\Sistemas-Distribuido\ProjetoSD\ServidorJogoDaVelha\ServidorJogoDaVelha\obj\Debug\net6.0\ServidorJogoDaVelha.AssemblyInfo.cs
+C:\facul\periodo 7\Sistemas Distribuidos\versao-simplificada-thread\Sistemas-Distribuido\ProjetoSD\ServidorJogoDaVelha\ServidorJogoDaVelha\obj\Debug\net6.0\ServidorJogoDaVelha.csproj.CoreCompileInputs.cache
+C:\facul\periodo 7\Sistemas Distribuidos\versao-simplificada-thread\Sistemas-Distribuido\ProjetoSD\ServidorJogoDaVelha\ServidorJogoDaVelha\obj\Debug\net6.0\ServidorJogoDaVelha.dll
+C:\facul\periodo 7\Sistemas Distribuidos\versao-simplificada-thread\Sistemas-Distribuido\ProjetoSD\ServidorJogoDaVelha\ServidorJogoDaVelha\obj\Debug\net6.0\refint\ServidorJogoDaVelha.dll
+C:\facul\periodo 7\Sistemas Distribuidos\versao-simplificada-thread\Sistemas-Distribuido\ProjetoSD\ServidorJogoDaVelha\ServidorJogoDaVelha\obj\Debug\net6.0\ServidorJogoDaVelha.pdb
+C:\facul\periodo 7\Sistemas Distribuidos\versao-simplificada-thread\Sistemas-Distribuido\ProjetoSD\ServidorJogoDaVelha\ServidorJogoDaVelha\obj\Debug\net6.0\ServidorJogoDaVelha.genruntimeconfig.cache
+C:\facul\periodo 7\Sistemas Distribuidos\versao-simplificada-thread\Sistemas-Distribuido\ProjetoSD\ServidorJogoDaVelha\ServidorJogoDaVelha\obj\Debug\net6.0\ref\ServidorJogoDaVelha.dll
