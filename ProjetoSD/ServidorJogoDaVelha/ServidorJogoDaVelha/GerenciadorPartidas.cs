@@ -37,13 +37,13 @@ namespace GerenciadorPartidas
         {
             Thread.Sleep(500);
             jogador.WriteLine("Digite seu Nome:");
-            Console.WriteLine("Esperando o nome de [" + (jogador.EstaJogandoComBola ? 1 : 2) + "]");
+            Console.WriteLine("Esperando o nome de [" + (jogador.EstaJogandoComBola ? "BOLA" : "X") + "]");
 
             try
             {
                 DateTime startTime = DateTime.Now;
                 string? nome = null;
-                while ((DateTime.Now - startTime).TotalSeconds < 20)
+                while ((DateTime.Now - startTime).TotalSeconds < 7)
                 {
                     if (jogador.Fluxo.DataAvailable)
                     {

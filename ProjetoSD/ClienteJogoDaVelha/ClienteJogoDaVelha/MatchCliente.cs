@@ -34,8 +34,24 @@ namespace GerenciadorMatchCliente
         private void PrintarMatriz()
         {
             Console.WriteLine("### PRINTAR MATRIZ ###");
+            Console.WriteLine("           [COLUNA]        ");
+            Console.WriteLine("          [0] [1] [2]");
             for (int i = 0; i < 3; i++)
             {
+                if (i == 1)
+                {
+                    Console.Write("[LINHA][" + i + "] ");
+                }
+                else
+                {
+                    for (int k = 0; k < 9; k++)
+                    {
+                        if (k == 7)
+                            Console.Write("["+i+"]");
+                        else
+                            Console.Write(" ");
+                    }
+                }
                 for (int j = 0; j < 3; j++)
                 {
                     if (j != 0)
@@ -54,7 +70,6 @@ namespace GerenciadorMatchCliente
                 Console.Clear();
                 PrintarMatriz();
                 string str = EsperandoRespostaDoServidor();
-                Console.WriteLine("SERVIDOR RESPONDEU [" + str + "]");
                 if (str.ToLower().Contains("exit"))
                 {
                     Exit();
@@ -66,7 +81,7 @@ namespace GerenciadorMatchCliente
                     FazerJogada();
                 else if (str.ToLower().Contains("vencedor"))
                 {
-                    Console.WriteLine("### VENCEDOR ###");
+                    Console.WriteLine("\n### VOCE TEM 15 SEGUNDOS PARA ACEITAR, CASO CONTRARIO FECHARÁ A CONEXÃO ### \n");
                     AnunciarVitoriaOuDerrota(str);
                 }
             }
@@ -75,20 +90,24 @@ namespace GerenciadorMatchCliente
 
         private void AnunciarVitoriaOuDerrota(string str)
         {
-            if (jogador.EstaJogandoComBola && str.ToLower().Contains("bola"))
+            if(str.ToLower().Contains("empate"))
             {
-                str = "Parabéns! Você ganhou";
+                str = "### EMPATE ###";
+            }
+            else if (jogador.EstaJogandoComBola && str.ToLower().Contains("bola"))
+            {
+                str = "### Parabéns! Você ganhou ###";
                 Pontuacao1++;
             }
             else if (!jogador.EstaJogandoComBola && str.ToLower().Contains("x"))
             {
                 Pontuacao1++;
-                str = "Parabéns! Você ganhou";
+                str = "### Parabéns! Você ganhou ###";
             }
             else
             {
                 Pontuacao2++;
-                str = "Você perdeu!";
+                str = "### Você perdeu! ###";
             }
             Console.WriteLine(str);
             Console.WriteLine("#### PONTUACAO ####");
@@ -99,7 +118,7 @@ namespace GerenciadorMatchCliente
             LimparBuffDeTeclado();
             str = Console.ReadLine() ?? "N";
             Console.WriteLine("### Minha resposta: [" + str + "]");
-            
+
             try
             {
                 Thread.Sleep(1000);
@@ -124,8 +143,8 @@ namespace GerenciadorMatchCliente
             Thread.Sleep(150);
             try
             {
-                Console.WriteLine("Sua vez: Digite dois inteiros entre 0-9 juntos representando a posicao respectivamente da matriz a ser jogada! Ex: 01");
-                Console.Write("\nDigite sua jogada: ");
+                Console.WriteLine("### SUA VEZ DE JOGAR | APENAS DOIS INTEIROS ENTRE 0-2 REPRESENTANDO LINHA E COLUNA DA MATRIZ ###");
+                Console.Write("\n - Digite sua jogada: ");
                 LimparBuffDeTeclado();
                 string str = Console.ReadLine() ?? "";
                 jogador.WriteLine(str);
@@ -143,7 +162,7 @@ namespace GerenciadorMatchCliente
 
             try
             {
-                Console.WriteLine("\n### [SUA VEZ] ###\n");
+                Console.WriteLine("\n### ESPERANDO [" + NomeJogador2 + "] JOGAR ###");
                 str = jogador.ReadLine();
             }
             catch (Exception ex)

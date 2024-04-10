@@ -36,7 +36,7 @@ namespace GerenciarPartidaCliente
                 }
                 else
                 {
-                    Console.WriteLine(str);
+                    Console.WriteLine("### SERVIDOR RESPONDEU: "+ str);
                     Exit("Servidor nao pediu o nome... ");
                     return;
                 }

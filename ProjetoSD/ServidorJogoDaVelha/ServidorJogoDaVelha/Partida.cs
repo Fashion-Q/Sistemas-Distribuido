@@ -78,11 +78,20 @@ namespace Partida
                 j2.JogadorEstaOcupado = true;
                 JogadorBolaQuerContinuar = false;
                 JogadorXQuerContinuar = false;
-                string str = "vencedor: " + (estadoPartida == EstadoDaPartida.BolaGanhou ? "bola" : "x");
-                if (str.ToLower().Contains("bola"))
-                    vez = j1.EstaJogandoComBola ? Vez.j2 : Vez.j1;
-                else if (str.ToLower().Contains('x'))
-                    vez = !j1.EstaJogandoComBola ? Vez.j2 : Vez.j1;
+                string str = "";
+                if(estadoPartida == EstadoDaPartida.Empate)
+                {
+                    str = "vencedor: empate";
+                    InverterVez();
+                }
+                else
+                {
+                     str = "vencedor: " + (estadoPartida == EstadoDaPartida.BolaGanhou ? "bola" : "x");
+                    if (str.ToLower().Contains("bola"))
+                        vez = j1.EstaJogandoComBola ? Vez.j2 : Vez.j1;
+                    else if (str.ToLower().Contains('x'))
+                        vez = !j1.EstaJogandoComBola ? Vez.j2 : Vez.j1;
+                }
 
                 new Thread(() => EsperandoRevanche(j1, str)).Start();
                 new Thread(() => EsperandoRevanche(j2, str)).Start();
@@ -127,7 +136,7 @@ namespace Partida
                 jogador.DescartarBuffer();
                 DateTime startTime = DateTime.Now;
                 string? respostaCliente = null;
-                while ((DateTime.Now - startTime).TotalSeconds < 20)
+                while ((DateTime.Now - startTime).TotalSeconds < 15)
                 {
                     if (jogador.Fluxo.DataAvailable)
                     {
@@ -194,6 +203,23 @@ namespace Partida
                 estadoPartida = EstadoDaPartida.XGanhou;
                 return;
             }
+            if(VerificarEmpate())
+            {
+                estadoPartida = EstadoDaPartida.Empate;
+                return;
+            }
+        }
+
+        public bool VerificarEmpate()
+        {
+            for(int i=0;i<3;i++)
+            {
+                for (int j = 0; j < 3; j++)
+                    if (matrizPartida[i][j] == 0)
+                        return false;
+            }
+            Console.WriteLine("### EMPATE ###");
+            return true;
         }
 
         public bool VerificarVencedorLinhaCruzada(int bolaOuX)
@@ -414,7 +440,8 @@ namespace Partida
         ContinuarPartida,
         BolaGanhou,
         XGanhou,
-        Desistencia
+        Desistencia,
+        Empate
     }
     public enum Vez
     {
