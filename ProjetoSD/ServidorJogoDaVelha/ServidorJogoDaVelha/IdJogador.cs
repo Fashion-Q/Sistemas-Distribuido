@@ -12,8 +12,12 @@ namespace IdJogador
             Reader = new StreamReader(Fluxo);
             Writer = new StreamWriter(Fluxo);
         }
+        public Jogador(TcpClient Conexao, bool EstaJogandoComBola, string Nome) : this(Conexao, EstaJogandoComBola)
+        {
+            this.Nome = Nome;
+        }
         public TcpClient Conexao { get; set; }
-        private readonly NetworkStream Fluxo;
+        public readonly NetworkStream Fluxo;
         private StreamReader Reader { get; set; }
         private StreamWriter Writer { get; set; }
         public string Nome { get; set; } = null!;

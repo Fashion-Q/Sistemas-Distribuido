@@ -1,4 +1,5 @@
 ﻿using System.Net.Sockets;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using IdJogador;
 using Partida;
@@ -15,14 +16,14 @@ namespace GerenciadorPartidas
             if (j1 == null || !j1.Conexao.Connected)
             {
                 j1 = new(conexaoCliente, true);
-                Console.WriteLine("Pegou Jogador1");
+                //Console.WriteLine("Pegou Jogador1");
                 Thread aux = new Thread(() => HandleCliente(j1));
                 aux.Start();
             }
             else if (j2 == null || !j2.Conexao.Connected)
             {
                 j2 = new(conexaoCliente, false);
-                Console.WriteLine("Pegou oJogador2");
+                //Console.WriteLine("Pegou oJogador2");
                 Thread aux = new Thread(() => HandleCliente(j2));
                 aux.Start();
             }
@@ -36,28 +37,36 @@ namespace GerenciadorPartidas
         {
             Thread.Sleep(500);
             jogador.WriteLine("Digite seu Nome:");
-            Console.WriteLine("Esperando Jogador nome de [" + (jogador.EstaJogandoComBola ? 1 : 2) + "]");
-            CancellationTokenSource cancellatinoTokenSource = new CancellationTokenSource();
-            cancellatinoTokenSource.CancelAfter(TimeSpan.FromSeconds(15));
+            Console.WriteLine("Esperando o nome de [" + (jogador.EstaJogandoComBola ? 1 : 2) + "]");
 
             try
             {
-                string? nome = jogador.ReadLine();
+                DateTime startTime = DateTime.Now;
+                string? nome = null;
+                while ((DateTime.Now - startTime).TotalSeconds < 20)
+                {
+                    if (jogador.Fluxo.DataAvailable)
+                    {
+                        nome = jogador.ReadLine();
+                        break;
+                    }
+                }
+                if(nome == null)
+                {
+                    jogador.Conexao.Close();
+                    Console.WriteLine("### Jogador demorou a informar o nome, cancelando conexao");
+                    return;
+                }
                 Console.WriteLine("Jogador respondeu: " + nome);
-                jogador.Nome = nome ?? "Anonimous";
+                jogador.Nome = nome;
                 jogador.Nome = (jogador.Nome.Length == 0 ? "Anonimous" : jogador.Nome);
                 jogador.JogadorEstaOcupado = false;
                 AcionarPartida();
             }
-            catch (OperationCanceledException)
+            catch (IOException)
             {
-                Console.WriteLine("Tempo limite atingido. O Conexao não respondeu a tempo de 15 segundos");
-                jogador.Conexao.Close();
-            }
-            catch (IOException ex)
-            {
-                Console.WriteLine(ex.ToString());
-                Console.WriteLine("EXCEPTION");
+                //Console.WriteLine(ex.ToString());
+                //Console.WriteLine("EXCEPTION");
                 jogador.Conexao.Close();
             }
         }
@@ -68,10 +77,10 @@ namespace GerenciadorPartidas
                 Thread.Sleep(150);
                 jogador.WriteLine("Servidor ocupado, tente novamente mais tarde");
             }
-            catch (IOException ex)
+            catch (IOException)
             {
-                Console.WriteLine(ex.ToString());
-                Console.WriteLine("### Math Is Busy Exception ###");
+                //Console.WriteLine(ex.ToString());
+                //Console.WriteLine("### Math Is Busy Exception ###");
                 jogador.Conexao.Close();
             }
 
@@ -80,10 +89,10 @@ namespace GerenciadorPartidas
                 Thread.Sleep(150);
                 jogador.Conexao.Close();
             }
-            catch (IOException ex)
+            catch (IOException)
             {
-                Console.WriteLine(ex.ToString());
-                Console.WriteLine("### Math Is Busy Exception ###");
+                //Console.WriteLine(ex.ToString());
+                //Console.WriteLine("### Math Is Busy Exception ###");
                 jogador.Conexao.Close();
             }
         }
@@ -92,22 +101,22 @@ namespace GerenciadorPartidas
         {
             if (j1 == null || j2 == null)
             {
-                Console.WriteLine("Um dos dois são nulos, esperando outro...");
+                //Console.WriteLine("Um dos dois são nulos, esperando outro...");
                 return;
             }
             if (!j1.Conexao.Connected || !j2.Conexao.Connected)
             {
-                Console.WriteLine("Um dos dois não está conectado.");
+                //Console.WriteLine("Um dos dois não está conectado.");
                 return;
             }
             if (j1.JogadorEstaOcupado)
             {
-                Console.WriteLine("J1 ocupado ainda");
+                //Console.WriteLine("J1 ocupado ainda");
                 return;
             }
             if (j2.JogadorEstaOcupado)
             {
-                Console.WriteLine("J2 ocupado ainda");
+                //Console.WriteLine("J2 ocupado ainda");
                 return;
             }
             if (j1.Conexao.Connected && j2.Conexao.Connected)
@@ -119,9 +128,13 @@ namespace GerenciadorPartidas
                 Thread.Sleep(150);
                 if (TentarVerificarSeOsDoisEstaoRealmenteConectado())
                 {
-                    Console.WriteLine("### Partida inicializada! ###");
+                    Console.Clear();
+                    //Console.WriteLine("### Partida inicializada! ###");
                     MatchFound();
-                    _ = new PartidaPvP(new Jogador(j1.Conexao, true), new Jogador(j2.Conexao, false));
+                    _ = new PartidaPvP(new Jogador(j1.Conexao, true,j1.Nome), new Jogador(j2.Conexao, false,j2.Nome));
+                    Thread.Sleep(250);
+                    j1 = null;
+                    j2 = null;
                 }
 
             }
@@ -135,9 +148,9 @@ namespace GerenciadorPartidas
                 j1?.WriteLine("PARTIDA ENCONTRADA");
                 j2?.WriteLine("PARTIDA ENCONTRADA");
             }
-            catch (IOException ex)
+            catch (IOException)
             {
-                Console.WriteLine(ex.ToString());
+                //Console.WriteLine(ex.ToString());
                 j1?.Conexao.Close();
             }
         }
@@ -153,9 +166,9 @@ namespace GerenciadorPartidas
                 j1?.WriteLine("setar partida |" + j1.Nome + " | " + j2?.Nome + " | 1");
                 auxJ1 = true;
             }
-            catch (IOException ex)
+            catch (IOException)
             {
-                Console.WriteLine(ex.ToString());
+                //Console.WriteLine(ex.ToString());
                 auxJ1 = false;
                 j1?.Conexao.Close();
             }
@@ -164,9 +177,9 @@ namespace GerenciadorPartidas
                 j2?.WriteLine("setar partida |" + j1?.Nome + " | " + j2.Nome + " | 2");
                 auxJ2 = true;
             }
-            catch (IOException ex)
+            catch (IOException)
             {
-                Console.WriteLine(ex.ToString());
+                //Console.WriteLine(ex.ToString());
                 auxJ2 = false;
                 j2?.Conexao.Close();
             }
@@ -179,7 +192,7 @@ namespace GerenciadorPartidas
         {
             j1 = null;
             j2 = null;
-            Console.WriteLine("Cancelando Partida");
+            //Console.WriteLine("Cancelando Partida");
         }
 
 

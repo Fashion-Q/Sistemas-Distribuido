@@ -11,7 +11,6 @@ namespace Partida
         private EstadoDaPartida estadoPartida;
         private Vez vez;
         private ValidarJogada validarJogada;
-        private bool BolaComeca { get; set; } = true;
         private bool JogadorBolaQuerContinuar { get; set; } = false;
         private bool JogadorXQuerContinuar { get; set; } = false;
 
@@ -25,7 +24,6 @@ namespace Partida
             for (int i = 0; i < 3; i++)
                 matrizPartida[i] = new int[3];
             ResetarMatriz();
-            printarMatriz();
             new Thread(Run).Start();
         }
 
@@ -36,14 +34,14 @@ namespace Partida
                     matrizPartida[i][j] = 0;
         }
 
-        public void printarMatriz()
+        public void PrintarMatriz()
         {
-            Console.WriteLine("### PRINTAR MATRIZ ###");
+            Console.WriteLine("### TABULEIRO ###");
             for (int i = 0; i < 3; i++)
             {
                 for (int j = 0; j < 3; j++)
                 {
-                    if(j != 0)
+                    if (j != 0)
                         Console.Write(" | ");
                     Console.Write(matrizPartida[i][j]);
                 }
@@ -53,49 +51,99 @@ namespace Partida
         public void Run()
         {
             estadoPartida = EstadoDaPartida.ContinuarPartida;
-            while(estadoPartida == EstadoDaPartida.ContinuarPartida)
+            QuemComeca();
+            while (estadoPartida == EstadoDaPartida.ContinuarPartida)
             {
                 PartidaEmAndamento();
                 Lobby();
             }
             FinalizarPartida();
         }
+
+        public void QuemComeca()
+        {
+            if (j1.EstaJogandoComBola)
+                vez = Vez.j1;
+            else
+                vez = Vez.j2;
+            //Console.WriteLine("### QUEM COMEÇA ### " + vez.ToString());
+        }
         public void Lobby()
         {
             if (estadoPartida == EstadoDaPartida.Desistencia)
                 EnunciarDesistencia();
-            if(estadoPartida != EstadoDaPartida.Desistencia)
+            if (estadoPartida != EstadoDaPartida.Desistencia)
             {
                 j1.JogadorEstaOcupado = true;
                 j2.JogadorEstaOcupado = true;
                 JogadorBolaQuerContinuar = false;
                 JogadorXQuerContinuar = false;
-                new Thread(() => EsperandoRevanche(j1)).Start();
-                new Thread(() => EsperandoRevanche(j2)).Start();
-                while(j1.JogadorEstaOcupado && j2.JogadorEstaOcupado && estadoPartida != EstadoDaPartida.Desistencia)
+                string str = "vencedor: " + (estadoPartida == EstadoDaPartida.BolaGanhou ? "bola" : "x");
+                if (str.ToLower().Contains("bola"))
+                    vez = j1.EstaJogandoComBola ? Vez.j2 : Vez.j1;
+                else if (str.ToLower().Contains('x'))
+                    vez = !j1.EstaJogandoComBola ? Vez.j2 : Vez.j1;
+
+                new Thread(() => EsperandoRevanche(j1, str)).Start();
+                new Thread(() => EsperandoRevanche(j2, str)).Start();
+                //Console.WriteLine("ESPERANDO REVANCHE DE JOGADORES...");
+                while ((j1.JogadorEstaOcupado || j2.JogadorEstaOcupado) && estadoPartida != EstadoDaPartida.Desistencia)
                 {
                     Thread.Sleep(150);
                 }
+                //Console.WriteLine("### " + j1.JogadorEstaOcupado + " | " + j2.JogadorEstaOcupado + " | " + estadoPartida.ToString());
             }
-            if(JogadorBolaQuerContinuar && JogadorXQuerContinuar && estadoPartida != EstadoDaPartida.Desistencia)
+            if (JogadorBolaQuerContinuar && JogadorXQuerContinuar && estadoPartida != EstadoDaPartida.Desistencia)
             {
-                BolaComeca = !BolaComeca;
                 estadoPartida = EstadoDaPartida.ContinuarPartida;
+                AvisarRevanche("MATCH");
+            }
+            else
+            {
+                AvisarRevanche("N");
             }
         }
-        public void EsperandoRevanche(Jogador jogador)
+
+        public void AvisarRevanche(string str)
         {
-            CancellationTokenSource cancellatinoTokenSource = new CancellationTokenSource();
-            cancellatinoTokenSource.CancelAfter(TimeSpan.FromSeconds(20));
+            Thread.Sleep(150);
             try
             {
-                string str = "vencedor: " + (estadoPartida == EstadoDaPartida.BolaGanhou ? "bola" : "x");
-                Thread.Sleep(150);
+                j1.WriteLine(str);
+                j2.WriteLine(str);
+            }
+            catch (Exception)
+            {
+                //Console.WriteLine(ex.ToString());
+                EnunciarDesistencia();
+            }
+        }
+        public void EsperandoRevanche(Jogador jogador, string str)
+        {
+            Thread.Sleep(150);
+            try
+            {
                 jogador.WriteLine(str);
                 jogador.DescartarBuffer();
-                str = jogador.ReadLine();
+                DateTime startTime = DateTime.Now;
+                string? respostaCliente = null;
+                while ((DateTime.Now - startTime).TotalSeconds < 20)
+                {
+                    if (jogador.Fluxo.DataAvailable)
+                    {
+                        respostaCliente = jogador.ReadLine();
+                        break;
+                    }
+                    Thread.Sleep(10);
+                }
+                if (respostaCliente == null)
+                {
+                    //Console.WriteLine("### Jogador demorou a informar a revanche, encerrando conexao");
+                    FinalizarPartida();
+                    return;
+                }
                 jogador.JogadorEstaOcupado = false;
-                if(str.ToLower().Contains("continuar"))
+                if (respostaCliente.ToLower().Contains('s'))
                 {
                     if (jogador.EstaJogandoComBola)
                         JogadorBolaQuerContinuar = true;
@@ -103,35 +151,30 @@ namespace Partida
                         JogadorXQuerContinuar = true;
                 }
             }
-            catch (OperationCanceledException)
+            catch (IOException)
             {
-                Console.WriteLine("Tempo limite atingido. O Jogador não respondeu a tempo de 20 segundos: " + jogador.Nome);
-                jogador.Conexao.Close();
-                estadoPartida = EstadoDaPartida.Desistencia;
-                EnunciarDesistencia();
-            }
-            catch (IOException ex)
-            {
-                Console.WriteLine(ex.ToString());
-                Console.WriteLine("EXCEPTION");
+                //Console.WriteLine(ex.ToString());
                 EnunciarDesistencia();
             }
         }
         public void PartidaEmAndamento()
         {
-            vez = BolaComeca ? Vez.j1 : Vez.j2;
+            ResetarMatriz();
+            EnviarMatrizParaJogadores();
+            InverterVez();
             while (estadoPartida == EstadoDaPartida.ContinuarPartida)
             {
                 AvisarJogadorVez();
                 ReceberJogada();
                 EnviarMatrizParaJogadores();
                 VerificarSeJogadorGanhou();
+                Console.Clear();
                 Thread.Sleep(10);
             }
         }
         public void VerificarSeJogadorGanhou()
         {
-            if(VerificarVencedorLinhaHorizontalOuVertical(1))
+            if (VerificarVencedorLinhaHorizontalOuVertical(1))
             {
                 estadoPartida = EstadoDaPartida.BolaGanhou;
                 return;
@@ -162,7 +205,7 @@ namespace Partida
             //  1 0 0
             //  0 1 0
             //  0 0 1
-            for (int ij=0;ij<3;ij++)
+            for (int ij = 0; ij < 3; ij++)
             {
                 if (matrizPartida[ij][ij] == bolaOuX)
                     contador++;
@@ -176,15 +219,12 @@ namespace Partida
             //  0 0 1
             //  0 1 0
             //  1 0 0
-            for(int i=0;i<3;i++)
+            for (int i = 0, j = 2; i < 3 && j >= 0; i++, j--)
             {
-                for(int j=2;j>=0;j--)
-                {
-                    if (matrizPartida[i][j] == bolaOuX)
-                        contador++;
-                    else
-                        break;
-                }
+                if (matrizPartida[i][j] == bolaOuX)
+                    contador++;
+                else
+                    break;
             }
             if (contador == 3)
                 return true;
@@ -196,10 +236,10 @@ namespace Partida
             int contador;
             //1 = bola | 2 = X
             //verificar linha horizontal
-            for(int i=0;i<3;i++)
+            for (int i = 0; i < 3; i++)
             {
                 contador = 0;
-                for(int j=0;j<3;)
+                for (int j = 0; j < 3; j++)
                 {
                     if (matrizPartida[i][j] == bolaOuX)
                         contador++;
@@ -211,7 +251,7 @@ namespace Partida
             for (int i = 0; i < 3; i++)
             {
                 contador = 0;
-                for (int j = 0; j < 3;)
+                for (int j = 0; j < 3; j++)
                 {
                     if (matrizPartida[j][i] == bolaOuX)
                         contador++;
@@ -224,6 +264,7 @@ namespace Partida
 
         public void EnviarMatrizParaJogadores()
         {
+            Thread.Sleep(150);
             try
             {
                 string str = "";
@@ -234,18 +275,17 @@ namespace Partida
                         str += matrizPartida[i][j].ToString();
                     }
                 }
-                printarMatriz();
-                Console.Write("Matriz Enviada: " + str);
-                Thread.Sleep(150);
+                //PrintarMatriz();
+                //Console.WriteLine("Matriz Enviada: " + str);
                 GetJogadorAtual.WriteLine(str);
                 InverterVez();
                 GetJogadorAtual.WriteLine(str);
                 Thread.Sleep(150);
             }
-            catch (IOException ex)
+            catch (IOException)
             {
-                Console.WriteLine(ex.ToString());
-                Console.WriteLine("EXCEPTION");
+                //Console.WriteLine(ex.ToString());
+                //Console.WriteLine("EXCEPTION");
                 EnunciarDesistencia();
             }
         }
@@ -259,19 +299,24 @@ namespace Partida
                 try
                 {
                     GetJogadorAtual.DescartarBuffer();
+                    //Console.WriteLine("Esperando jogador [" + GetJogadorAtual.Nome + "] jogar...");
                     string str = GetJogadorAtual.ReadLine();
                     if (JogadaFoiBemSucedida(str))
+                    {
+                        //Console.WriteLine("Jogada foi [bem] sucedida!");
                         validarJogada = ValidarJogada.JogadaValida;
+                    }
                     else
                     {
                         Thread.Sleep(150);
+                        //Console.WriteLine("Jogada [não] foi bem sucedida!");
                         GetJogadorAtual.WriteLine("vez");
                     }
                 }
-                catch (IOException ex)
+                catch (IOException)
                 {
-                    Console.WriteLine(ex.ToString());
-                    Console.WriteLine("EXCEPTION");
+                    //Console.WriteLine(ex.ToString());
+                    //Console.WriteLine("EXCEPTION");
                     EnunciarDesistencia();
                 }
             }
@@ -281,13 +326,14 @@ namespace Partida
             Thread.Sleep(150);
             try
             {
+                //Console.WriteLine("Vez do jogador: " + vez.ToString());
                 GetJogadorAtual.WriteLine("vez");
                 validarJogada = ValidarJogada.JogadaInvalida;
             }
-            catch (IOException ex)
+            catch (IOException)
             {
-                Console.WriteLine(ex.ToString());
-                Console.WriteLine("EXCEPTION: AvisarJogadorVez");
+                //Console.WriteLine(ex.ToString());
+                //Console.WriteLine("EXCEPTION: AvisarJogadorVez");
                 EnunciarDesistencia();
             }
         }
@@ -297,12 +343,12 @@ namespace Partida
         {
             if (str.Length != 2)
             {
-                Console.WriteLine("Erro na JogadaFoiBemSucedida: Tamanho da jogada != 2");
+                //Console.WriteLine("Erro na JogadaFoiBemSucedida: Tamanho da jogada != 2: " + str);
                 return false;
             }
             if (!str.All(char.IsDigit))
             {
-                Console.WriteLine("Erro na JogadaFoiBemSucedida: Nao é digito");
+                //Console.WriteLine("Erro na JogadaFoiBemSucedida: Nao é digito");
                 return false;
             }
             int i = -1, j = -1;
@@ -310,20 +356,20 @@ namespace Partida
             _ = int.TryParse(str[1].ToString(), out j);
             if (i != -1 && j != -1)
             {
-                if (i >= 0 && i <=  2 && j >= 0 && j <= 2)
+                if (i >= 0 && i <= 2 && j >= 0 && j <= 2)
                 {
                     int BolaOuX = GetJogadorAtual.EstaJogandoComBola ? 1 : 2;
                     if (matrizPartida[i][j] == 0)
                         matrizPartida[i][j] = BolaOuX;
                     else
                     {
-                        Console.WriteLine("JogadaFoiBemSucedida: Retornou False 1");
+                        //Console.WriteLine("JogadaFoiBemSucedida: Retornou False 1");
                         return false;
                     }
                     return true;
                 }
             }
-            Console.WriteLine("JogadaFoiBemSucedida: Retornou False 2");
+            //Console.WriteLine("JogadaFoiBemSucedida: Retornou False 2");
             return false;
         }
 
@@ -334,32 +380,32 @@ namespace Partida
             {
                 GetJogadorAtual.WriteLine("desistencia");
             }
-            catch (IOException exx)
+            catch (IOException)
             {
-                Console.WriteLine(exx.ToString());
-                Console.WriteLine("Outro Error");
+                //Console.WriteLine(exx.ToString());
+                //Console.WriteLine("Outro Error");
 
             }
             estadoPartida = EstadoDaPartida.Desistencia;
         }
         public void FinalizarPartida()
         {
+            //Console.WriteLine("CONEXAO FECHADA");
             try
             {
                 j1.Conexao.Close();
             }
-            catch (IOException exx)
+            catch (IOException)
             {
-                Console.WriteLine(exx.ToString());
-
+                //Console.WriteLine(exx.ToString());
             }
             try
             {
                 j2.Conexao.Close();
             }
-            catch (IOException exx)
+            catch (IOException)
             {
-                Console.WriteLine(exx.ToString());
+                //Console.WriteLine(exx.ToString());
             }
         }
     }

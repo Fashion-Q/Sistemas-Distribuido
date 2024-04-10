@@ -23,14 +23,16 @@ namespace GerenciarPartidaCliente
                 string? str = jogador.ReadLine();
                 if (str != null && str.ToLower().Contains("digite seu nome"))
                 {
-                    Console.Write("Informando nome para o servidor: ");
-                    Random random = new Random();
+                    Console.Write("Digite seu nome: ");
+                    str = Console.ReadLine() ?? "Anonymous";
+                    jogador.Nome = str;
+                    jogador.WriteLine(jogador.Nome);
+                    /*Random random = new Random();
                     int numeroAleatorio = random.Next(1, 21);
                     Thread.Sleep(250);
                     jogador.Nome = "Jogador " + numeroAleatorio;
-                    jogador.WriteLine(jogador.Nome);
-                    /*str = Console.ReadLine();
-                    jogador.WriteLine(str ?? "");*/
+                    Console.WriteLine("Informando nome para o servidor: " + jogador.Nome);
+                    jogador.WriteLine(jogador.Nome);*/
                 }
                 else
                 {
@@ -39,7 +41,6 @@ namespace GerenciarPartidaCliente
                     return;
                 }
                 // Recebe mensagem do servidor se a partida vai ser encontrada
-                Console.WriteLine("Esperando servidor responder MATCH | VEZ");
                 string mensagemDoServidor = "";
                 MatchCliente matchCliente = new(jogador);
                 while (!mensagemDoServidor.ToLower().Contains("partida encontrada"))
@@ -54,24 +55,21 @@ namespace GerenciarPartidaCliente
                         particao[1] = particao[1].Trim();
                         particao[2] = particao[2].Trim();
                         particao[3] = particao[3].Trim();
-
-                        Console.WriteLine(particao[1]);
-                        Console.WriteLine(particao[2]);
-                        Console.WriteLine(particao[3]);
                         jogador.Nome = particao[1].Trim();
                         matchCliente.NomeJogador2 = particao[2].Trim();
                         jogador.EstaJogandoComBola = particao[3].Trim() == "1" ? true : false;
-                        Console.WriteLine();
-                        Console.WriteLine(jogador.Nome);
-                        Console.WriteLine(matchCliente.NomeJogador2);
-                        Console.WriteLine(jogador.EstaJogandoComBola);
+/*                        Console.WriteLine();
+                        Console.WriteLine("Nome1: " + jogador.Nome);
+                        Console.WriteLine("Nome2: " + matchCliente.NomeJogador2);
+                        Console.WriteLine("Sou Bola: " + jogador.EstaJogandoComBola);*/
                     }
                 }
-                Console.WriteLine("PARTIDA ENCONTRADA");
+                //Console.WriteLine("PARTIDA ENCONTRADA");
+                new Thread(matchCliente.Run).Start();
             }
-            catch (IOException ex)
+            catch (IOException)
             {
-                Console.WriteLine(ex.ToString());
+                //Console.WriteLine(ex.ToString());
                 Exit("\n### ERRO DE CONEXAO ###");
             }
 
