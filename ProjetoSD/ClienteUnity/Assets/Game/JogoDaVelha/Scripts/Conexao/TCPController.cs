@@ -9,6 +9,8 @@ using UnityEngine;
 public class TCPController : MonoBehaviour
 {
     public static TCPController instanceTCP;
+    [SerializeField] private TMP_InputField inputIP;
+    [SerializeField] private TMP_InputField inputPorta;
     delegate void AcaoDeLeitura(string str);
     AcaoDeLeitura acaoLeitura;
     public TcpClient clienteSocket;
@@ -49,7 +51,8 @@ public class TCPController : MonoBehaviour
         yield return new WaitForSeconds(0.15f);
         try
         {
-            clienteSocket = new TcpClient("127.0.0.1", 8001);
+            int porta = int.Parse(inputPorta.text);
+            clienteSocket = new TcpClient(inputIP.text, porta);
             GameController.instanceGameController.AtivarProbleminha(false);
         }
         catch
