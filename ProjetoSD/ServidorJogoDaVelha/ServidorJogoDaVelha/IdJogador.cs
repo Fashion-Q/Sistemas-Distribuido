@@ -1,4 +1,5 @@
-﻿using System.Net.Sockets;
+﻿using System.Diagnostics;
+using System.Net.Sockets;
 
 namespace IdJogador
 {
@@ -17,7 +18,7 @@ namespace IdJogador
             this.Nome = Nome;
         }
         public TcpClient Conexao { get; set; }
-        public readonly NetworkStream Fluxo;
+        public NetworkStream Fluxo;
         private StreamReader Reader { get; set; }
         private StreamWriter Writer { get; set; }
         public string Nome { get; set; } = null!;
@@ -40,6 +41,7 @@ namespace IdJogador
             while (Fluxo.DataAvailable)
             {
                 Fluxo.Read(buffer, 0, buffer.Length);
+                Console.WriteLine("Descartando buffer: " + buffer);
             }
         }
     }

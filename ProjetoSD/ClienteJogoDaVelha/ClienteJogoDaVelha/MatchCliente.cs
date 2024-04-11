@@ -47,7 +47,7 @@ namespace GerenciadorMatchCliente
                     for (int k = 0; k < 9; k++)
                     {
                         if (k == 7)
-                            Console.Write("["+i+"]");
+                            Console.Write("[" + i + "]");
                         else
                             Console.Write(" ");
                     }
@@ -90,7 +90,8 @@ namespace GerenciadorMatchCliente
 
         private void AnunciarVitoriaOuDerrota(string str)
         {
-            if(str.ToLower().Contains("empate"))
+            Console.WriteLine("Esta com bola: " + str + " | " + jogador.EstaJogandoComBola);
+            if (str.ToLower().Contains("empate"))
             {
                 str = "### EMPATE ###";
             }
@@ -111,8 +112,16 @@ namespace GerenciadorMatchCliente
             }
             Console.WriteLine(str);
             Console.WriteLine("#### PONTUACAO ####");
-            Console.WriteLine("Minha pontuacao: [" + jogador.Nome + "] | " + Pontuacao1);
-            Console.WriteLine("Oponente:        [" + NomeJogador2 + "] | " + Pontuacao2);
+            if (jogador.EstaJogandoComBola)
+            {
+                Console.WriteLine("[" + jogador.Nome + "] | " + Pontuacao1);
+                Console.WriteLine("[" + NomeJogador2 + "] | " + Pontuacao2);
+            }
+            else
+            {
+                Console.WriteLine("[" + jogador.Nome + "] | " + Pontuacao2);
+                Console.WriteLine("[" + NomeJogador2 + "] | " + Pontuacao1);
+            }
             str = "\n### Deseja Continuar ### [S] | [N] ";
             Console.WriteLine(str);
             LimparBuffDeTeclado();

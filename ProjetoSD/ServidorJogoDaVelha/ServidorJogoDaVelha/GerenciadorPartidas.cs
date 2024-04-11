@@ -1,4 +1,5 @@
-﻿using System.Net.Sockets;
+﻿using System.Diagnostics;
+using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using IdJogador;
@@ -10,6 +11,8 @@ namespace GerenciadorPartidas
     {
         private Jogador? j1;
         private Jogador? j2;
+        private bool HandleConexao1 { get; set; }
+        private bool HandleConexao2 { get; set; }
         private bool TentarMatch { get; set; } = false;
         public void ReceberJogador(TcpClient conexaoCliente)
         {
@@ -17,12 +20,14 @@ namespace GerenciadorPartidas
             {
                 j1 = new(conexaoCliente, true);
                 //Console.WriteLine("Pegou Jogador1");
+                HandleConexao1 = true;
                 Thread aux = new Thread(() => HandleCliente(j1));
                 aux.Start();
             }
             else if (j2 == null || !j2.Conexao.Connected)
             {
                 j2 = new(conexaoCliente, false);
+                HandleConexao2 = true;
                 //Console.WriteLine("Pegou oJogador2");
                 Thread aux = new Thread(() => HandleCliente(j2));
                 aux.Start();
@@ -43,7 +48,7 @@ namespace GerenciadorPartidas
             {
                 DateTime startTime = DateTime.Now;
                 string? nome = null;
-                while ((DateTime.Now - startTime).TotalSeconds < 7)
+                while ((DateTime.Now - startTime).TotalSeconds < 5)
                 {
                     if (jogador.Fluxo.DataAvailable)
                     {
@@ -51,7 +56,7 @@ namespace GerenciadorPartidas
                         break;
                     }
                 }
-                if(nome == null)
+                if (nome == null)
                 {
                     jogador.Conexao.Close();
                     Console.WriteLine("### Jogador demorou a informar o nome, cancelando conexao");
@@ -61,7 +66,8 @@ namespace GerenciadorPartidas
                 jogador.Nome = nome;
                 jogador.Nome = (jogador.Nome.Length == 0 ? "Anonimous" : jogador.Nome);
                 jogador.JogadorEstaOcupado = false;
-                AcionarPartida();
+                if (!TeveNomeDuplicado(jogador))
+                    AcionarPartida();
             }
             catch (IOException)
             {
@@ -69,6 +75,38 @@ namespace GerenciadorPartidas
                 //Console.WriteLine("EXCEPTION");
                 jogador.Conexao.Close();
             }
+        }
+        public bool TeveNomeDuplicado(Jogador jogador)
+        {
+            bool teveError = false;
+            if (j1 != null && j2 != null)
+            {
+                if (j1.Nome == j2.Nome)
+                {
+                    teveError = true;
+                    try
+                    {
+                        j1.WriteLine("error");
+                        j1.Conexao.Close();
+                        j1 = null;
+                    }
+                    catch (IOException)
+                    {
+                        j1 = null;
+                    }
+                    try
+                    {
+                        j2.WriteLine("error");
+                        j2.Conexao.Close();
+                        j2 = null;
+                    }
+                    catch (IOException)
+                    {
+                        j2 = null;
+                    }
+                }
+            }
+            return teveError;
         }
         public static void MatchIsBusy(Jogador jogador)
         {
@@ -104,9 +142,16 @@ namespace GerenciadorPartidas
                 //Console.WriteLine("Um dos dois são nulos, esperando outro...");
                 return;
             }
-            if (!j1.Conexao.Connected || !j2.Conexao.Connected)
+            if (!j1.Conexao.Connected)
             {
-                //Console.WriteLine("Um dos dois não está conectado.");
+                j1.Conexao.Close();
+                j1 = null;
+                return;
+            }
+            if (!j2.Conexao.Connected)
+            {
+                j2.Conexao.Close();
+                j2 = null;
                 return;
             }
             if (j1.JogadorEstaOcupado)
@@ -131,7 +176,7 @@ namespace GerenciadorPartidas
                     Console.Clear();
                     //Console.WriteLine("### Partida inicializada! ###");
                     MatchFound();
-                    _ = new PartidaPvP(new Jogador(j1.Conexao, true,j1.Nome), new Jogador(j2.Conexao, false,j2.Nome));
+                    _ = new PartidaPvP(new Jogador(j1.Conexao, true, j1.Nome), new Jogador(j2.Conexao, false, j2.Nome));
                     Thread.Sleep(250);
                     j1 = null;
                     j2 = null;
@@ -161,6 +206,7 @@ namespace GerenciadorPartidas
             bool auxJ1;
             bool auxJ2;
             Thread.Sleep(150);
+
             try
             {
                 j1?.WriteLine("setar partida |" + j1.Nome + " | " + j2?.Nome + " | 1");
