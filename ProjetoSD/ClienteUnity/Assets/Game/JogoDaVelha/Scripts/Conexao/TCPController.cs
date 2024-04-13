@@ -1,3 +1,4 @@
+Ôªøusing System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -9,8 +10,6 @@ using UnityEngine;
 public class TCPController : MonoBehaviour
 {
     public static TCPController instanceTCP;
-    [SerializeField] private TMP_InputField inputIP;
-    [SerializeField] private TMP_InputField inputPorta;
     delegate void AcaoDeLeitura(string str);
     AcaoDeLeitura acaoLeitura;
     public TcpClient clienteSocket;
@@ -20,6 +19,7 @@ public class TCPController : MonoBehaviour
     [SerializeField] private GameObject tcpCanvasConexao;
     [SerializeField] private TextMeshProUGUI nomeJogador1;
     [SerializeField] private TextMeshProUGUI nomeJogador2;
+    [SerializeField] private TextMeshProUGUI testando;
     private bool EstaConectando { get; set; } = false;
     public TextMeshProUGUI J1 => nomeJogador1;
     public TextMeshProUGUI J2 => nomeJogador2;
@@ -38,6 +38,7 @@ public class TCPController : MonoBehaviour
         GameController.instanceGameController.ResetarJogoDaVelha();
         if (!EstaConectando)
         {
+            testando.text = "1";
             EstaConectando = true;
             StartCoroutine(TentarConexaoCounrontina());
         }
@@ -48,34 +49,50 @@ public class TCPController : MonoBehaviour
     {
         GameController.instanceGameController.AnunciarProbleminha("Tentando conectar");
         GameController.instanceGameController.EsperandoOutroJogadorAceitarRevanche = false;
+        testando.text += " 2";
         yield return new WaitForSeconds(0.15f);
         try
         {
-            int porta = int.Parse(inputPorta.text);
-            clienteSocket = new TcpClient(inputIP.text, porta);
+            testando.text += " 3";
+            testando.text += " 4";
+            Debug.Log(UserRepository.GetIPAdress() + " | " + UserRepository.GetPort());
+
+
+            //clienteSocket = new TcpClient(UserRepository.GetIPAdress(), UserRepository.GetPort());
+            clienteSocket = new TcpClient(UserRepository.GetIPAdress(), 8001);
+            testando.text += " 5";//aa
             GameController.instanceGameController.AtivarProbleminha(false);
+            testando.text += " 6";
         }
-        catch
+        catch(Exception ex)
         {
-            GameController.instanceGameController.AnunciarProbleminha("Falha de conex„o com o servidor");
+            testando.text += " 7 | " + ex.ToString();
+            Debug.Log(ex.ToString());
+            GameController.instanceGameController.AnunciarProbleminha("Falha de conex√£o com o servidor");
+            EstaConectando = false;
+            yield break;
         }
         EstaConectando = false;
-        GameController.instanceGameController.AtualizarBotaoPrincipal(false);
+        
         if (clienteSocket != null && clienteSocket.Connected)
         {
+            testando.text += " 8";
+            GameController.instanceGameController.AtualizarBotaoPrincipal(false);
             tcpCanvasConexao.SetActive(true);
             Fluxo = clienteSocket.GetStream();
             R = new StreamReader(Fluxo);
             W = new StreamWriter(Fluxo);
             acaoLeitura = EsperandoServidorPedirNome;
+            yield break;
         }
+        testando.text += " 9";
     }
 
     public void EsperandoMatch(string str)
     {
         if (str == "error")
         {
-            GameController.instanceGameController.AnunciarProbleminha("Erro de conex„o, tente novamente");
+            GameController.instanceGameController.AnunciarProbleminha("Erro de conex√£o, tente novamente");
             CancelarConexa();
             return;
         }
@@ -121,7 +138,7 @@ public class TCPController : MonoBehaviour
         {
             if (clienteSocket == null || !clienteSocket.Connected)
             {
-                GameController.instanceGameController.AnuncinarProblema("Problema de conex„o, tente novamente");
+                GameController.instanceGameController.AnuncinarProblema("Problema de conex√£o, tente novamente");
                 CancelarConexa();
                 return;
             }

@@ -19,18 +19,18 @@ namespace GerenciadorPartidas
             if (j1 == null || !j1.Conexao.Connected)
             {
                 j1 = new(conexaoCliente, true);
-                //Console.WriteLine("Pegou Jogador1");
                 HandleConexao1 = true;
                 Thread aux = new Thread(() => HandleCliente(j1));
                 aux.Start();
+                Console.WriteLine("Recebi jogador1");
             }
             else if (j2 == null || !j2.Conexao.Connected)
             {
                 j2 = new(conexaoCliente, false);
                 HandleConexao2 = true;
-                //Console.WriteLine("Pegou oJogador2");
                 Thread aux = new Thread(() => HandleCliente(j2));
                 aux.Start();
+                Console.WriteLine("Recebi jogador2");
             }
             else
             {

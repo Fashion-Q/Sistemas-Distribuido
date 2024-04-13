@@ -12,6 +12,7 @@ namespace ServidorJogoDaVelha
             servidor.Start();
             GerenciadorPartidasClass gerenciadorPartida = new GerenciadorPartidasClass();
             //Thread gerenciadorPartida = new Thread()
+            Console.WriteLine("O pai ta ON");
             while (true)
             {
                 TcpClient cliente = servidor.AcceptTcpClient();
