@@ -8,7 +8,7 @@ namespace ServidorJogoDaVelha
     {
         static void Main()
         {
-            TcpListener servidor = new TcpListener(IPAddress.Any, 8001);
+            TcpListener servidor = new TcpListener(IPAddress.Any, 64000);
             servidor.Start();
             GerenciadorPartidasClass gerenciadorPartida = new GerenciadorPartidasClass();
             //Thread gerenciadorPartida = new Thread()
@@ -19,5 +19,6 @@ namespace ServidorJogoDaVelha
                 gerenciadorPartida.ReceberJogador(cliente);
             }
         }
+        // Realize aqui as operações de limpeza ou finalização necessárias
     }
 }

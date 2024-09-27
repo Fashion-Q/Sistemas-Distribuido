@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.IO;
 using System.Net.Sockets;
 using System.Threading;
@@ -10,8 +8,6 @@ using UnityEngine;
 public class TCPController : MonoBehaviour
 {
     public static TCPController instanceTCP;
-    delegate void AcaoDeLeitura(string str);
-    AcaoDeLeitura acaoLeitura;
     public TcpClient clienteSocket;
     public NetworkStream Fluxo { get; set; }
     public StreamReader R { get; set; }
@@ -20,10 +16,25 @@ public class TCPController : MonoBehaviour
     [SerializeField] private TextMeshProUGUI nomeJogador1;
     [SerializeField] private TextMeshProUGUI nomeJogador2;
     [SerializeField] private TextMeshProUGUI testando;
+    public GameObject GetTcpCanvasConexao => tcpCanvasConexao;
+    public string GetJogador1 => nomeJogador1.text;
+    public void SetNomeJogador2(string str) => nomeJogador2.text = str;
     private bool EstaConectando { get; set; } = false;
     public TextMeshProUGUI J1 => nomeJogador1;
     public TextMeshProUGUI J2 => nomeJogador2;
     public bool PartidaEncontrada { get; set; } = false;
+    public static bool TCPBeforePvPConnectionError { get; set; } = false;
+    public static bool SetPlayerNameBool { get; set; } = false;
+    public static string SetPlayerNameStr { get; set; } = "";
+    public static bool SetMatchFound { get; set; } = false;
+    public StatusDoJogadorEnum StatusDoJogador { get; set; } = StatusDoJogadorEnum.Problema_de_conexão_tente_novamente;
+    public enum StatusDoJogadorEnum
+    {
+        Problema_de_conexão_tente_novamente,
+        Oponente_desistiu
+    }
+    
+
 
     private void Awake()
     {
@@ -32,7 +43,32 @@ public class TCPController : MonoBehaviour
         clienteSocket = null;
     }
 
-    public void TentarConexao()
+    private void Update()
+    {
+        if(TCPBeforePvPConnectionError)
+        {
+            tcpCanvasConexao.SetActive(false);
+            Debug.Log("### TCPBeforePvPConnectionError ###");
+            TCPBeforePvPConnectionError = false;
+            GameController.instanceGameController.AnunciarMensagem(StatusDoJogador.ToString().Replace('_',' '));
+            CancelarConexa();
+        }
+
+        if(SetMatchFound)
+        {
+            SetMatchFound = false;
+            PartidaEncontrada = true;
+            GetTcpCanvasConexao.SetActive(false);
+            new Thread(PvP.instancePvP.PvPThread).Start();
+        }
+        if(SetPlayerNameBool)
+        {
+            SetPlayerNameBool = false;
+            nomeJogador2.text = SetPlayerNameStr;
+        }
+    }
+
+    public void TryConnection()
     {
         PartidaEncontrada = false;
         GameController.instanceGameController.ResetarJogoDaVelha();
@@ -40,114 +76,54 @@ public class TCPController : MonoBehaviour
         {
             testando.text = "1";
             EstaConectando = true;
-            StartCoroutine(TentarConexaoCounrontina());
+            RequestingConnectionToTheServer();
         }
 
     }
 
-    IEnumerator TentarConexaoCounrontina()
+    public void RequestingConnectionToTheServer()
     {
-        GameController.instanceGameController.AnunciarProbleminha("Tentando conectar");
-        GameController.instanceGameController.EsperandoOutroJogadorAceitarRevanche = false;
+        bool IsCatch = false;
+        GameController.instanceGameController.AnunciarMensagem("Tentando conectar");
+        GameController.instanceGameController.AnnounceWinner = false;
         testando.text += " 2";
-        yield return new WaitForSeconds(0.15f);
         try
         {
             testando.text += " 3";
             testando.text += " 4";
-            Debug.Log(UserRepository.GetIPAdress() + " | " + UserRepository.GetPort());
-
 
             //clienteSocket = new TcpClient(UserRepository.GetIPAdress(), UserRepository.GetPort());
-            clienteSocket = new TcpClient(UserRepository.GetIPAdress(), 8001);
+            clienteSocket = new TcpClient(UserRepository.GetIPAdress(), UserRepository.GetPort());
             testando.text += " 5";//aa
             GameController.instanceGameController.AtivarProbleminha(false);
             testando.text += " 6";
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
+            IsCatch = true;
             testando.text += " 7 | " + ex.ToString();
             Debug.Log(ex.ToString());
-            GameController.instanceGameController.AnunciarProbleminha("Falha de conexão com o servidor");
+            GameController.instanceGameController.AnunciarMensagem("Falha de conexão com o servidor");
             EstaConectando = false;
-            yield break;
         }
         EstaConectando = false;
-        
+        testando.text += " 8";
+        if (IsCatch)
+            return;
+
         if (clienteSocket != null && clienteSocket.Connected)
         {
-            testando.text += " 8";
+            testando.text += " 9";
+
             GameController.instanceGameController.AtualizarBotaoPrincipal(false);
             tcpCanvasConexao.SetActive(true);
             Fluxo = clienteSocket.GetStream();
             R = new StreamReader(Fluxo);
             W = new StreamWriter(Fluxo);
-            acaoLeitura = EsperandoServidorPedirNome;
-            yield break;
-        }
-        testando.text += " 9";
-    }
-
-    public void EsperandoMatch(string str)
-    {
-        if (str == "error")
-        {
-            GameController.instanceGameController.AnunciarProbleminha("Erro de conexão, tente novamente");
-            CancelarConexa();
+            new Thread(TCPControllerBeforePvP.EsperandoServidorPedirNomeThread).Start();
             return;
         }
-        if (str.ToLower().Contains("setar partida"))
-        {
-            string[] particao = str.Split('|');
-            particao[0] = particao[0].Trim();
-            particao[2] = particao[2].Trim();
-            particao[3] = particao[3].Trim();
-            PvP.instancePvP.EstouJogandoComBola = particao[3] == "1" ? true : false;
-            if (PvP.instancePvP.EstouJogandoComBola)
-                nomeJogador2.text = particao[2].Trim();
-            else
-                nomeJogador2.text = particao[1].Trim();
-        }
-        if (str.ToLower().Contains("partida encontrada"))
-        {
-            PartidaEncontrada = true;
-            //StartCoroutine(PvP.instancePvP.ThreadManager());
-            new Thread(PvP.instancePvP.ThreadManager).Start();
-            acaoLeitura = null;
-            tcpCanvasConexao.SetActive(false);
-        }
-    }
-
-    public void EsperandoServidorPedirNome(string str)
-    {
-        if (str != null && str.ToLower().Contains("digite seu nome"))
-        {
-            WriterLine(nomeJogador1.text);
-            acaoLeitura = EsperandoMatch;
-        }
-        else
-        {
-            CancelarConexa();
-            Debug.Log("SERVIDOR NAO PEDIU NOME, CANCELANDO CONEXAO");
-        }
-    }
-
-    private void FixedUpdate()
-    {
-        if (Fluxo != null)
-        {
-            if (clienteSocket == null || !clienteSocket.Connected)
-            {
-                GameController.instanceGameController.AnuncinarProblema("Problema de conexão, tente novamente");
-                CancelarConexa();
-                return;
-            }
-            if (Fluxo.DataAvailable)
-            {
-                string str = R.ReadLine();
-                acaoLeitura?.Invoke(str);
-            }
-        }
+        testando.text += " 10";
     }
 
     public void WriterLine(string str)
@@ -159,7 +135,10 @@ public class TCPController : MonoBehaviour
     public void CancelarConexa()
     {
         if (clienteSocket != null)
+        {
+            Debug.Log("Fechando Conexao");
             clienteSocket.Close();
+        }
         clienteSocket = null;
         Fluxo = null;
         R = null;
@@ -167,8 +146,7 @@ public class TCPController : MonoBehaviour
         tcpCanvasConexao.SetActive(false);
         PartidaEncontrada = false;
         nomeJogador2.text = "Jogador 2";
-        GameController.instanceGameController.EsperandoOutroJogadorAceitarRevanche = false;
-        PvP.LerDoServidor = "";
+        GameController.instanceGameController.AnnounceWinner = false;
         GameController.instanceGameController.ResetarJogoDaVelha();
     }
     public void AposDestruir()

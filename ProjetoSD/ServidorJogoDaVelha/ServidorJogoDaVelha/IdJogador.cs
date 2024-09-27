@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using System.Net.Sockets;
+﻿using System.Net.Sockets;
 
 namespace IdJogador
 {
@@ -13,27 +12,22 @@ namespace IdJogador
             Reader = new StreamReader(Fluxo);
             Writer = new StreamWriter(Fluxo);
         }
-        public Jogador(TcpClient Conexao, bool EstaJogandoComBola, string Nome) : this(Conexao, EstaJogandoComBola)
+        public Jogador(TcpClient Conexao, bool EstaJogandoComBola, string Nome)
         {
+            this.EstaJogandoComBola = EstaJogandoComBola;
+            this.Conexao = Conexao;
+            Fluxo = Conexao.GetStream();
+            Reader = new StreamReader(Fluxo);
+            Writer = new StreamWriter(Fluxo);
             this.Nome = Nome;
         }
         public TcpClient Conexao { get; set; }
         public NetworkStream Fluxo;
-        private StreamReader Reader { get; set; }
-        private StreamWriter Writer { get; set; }
+        public StreamReader Reader { get; set; }
+        public StreamWriter Writer { get; set; }
         public string Nome { get; set; } = null!;
         public bool EstaJogandoComBola { get; set; } = false;
         public bool JogadorEstaOcupado { get; set; } = true;
-
-        public void WriteLine(string str)
-        {
-            Writer.WriteLine(str);
-            Writer.Flush();
-        }
-        public string ReadLine()
-        {
-            return Reader.ReadLine() ?? "";
-        }
 
         public void DescartarBuffer()
         {

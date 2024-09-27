@@ -1,16 +1,15 @@
 using System.Linq;
 using System;
 using UnityEngine;
-using System.Collections;
 
 public class PvP : MonoBehaviour
 {
     public static PvP instancePvP;
     delegate void AcaoDeLeitura(string str);
-    AcaoDeLeitura acaoLeitura;
-    public static string LerDoServidor { get; set; } = "";
     public bool EstouJogandoComBola { get; set; } = false;
 
+    public static string attJogo = "";
+    public static bool attJogoBool = false;
     private void Awake()
     {
         instancePvP = this;
@@ -19,74 +18,76 @@ public class PvP : MonoBehaviour
 
     private void Update()
     {
-        if(LerDoServidor.Length > 0)
+        if(attJogoBool)
         {
-            Run();
+            attJogoBool = false;
+            if (attJogo.Length == 9 && attJogo.All(char.IsDigit))
+                GameController.instanceGameController.AtualizarJogo(attJogo);
         }
     }
-
-    public void ThreadManager()
+    public void PvPThread()
     {
-        Debug.Log("Thread Manager iniciou");
-        while(TCPController.instanceTCP.PartidaEncontrada)
+        Debug.Log("Thread PvP [On]");
+        if (!TCPController.instanceTCP.PartidaEncontrada)
+            return;
+        string str = "";
+        while (TCPController.instanceTCP.PartidaEncontrada)
         {
-            if (!TCPController.instanceTCP.PartidaEncontrada)
-            {
-                return;
-            }
-
-            if (TCPController.instanceTCP.clienteSocket == null || !TCPController.instanceTCP.clienteSocket.Connected)
-            {
-                LerDoServidor = "desistencia";
-                //GameController.instanceGameController.AnuncinarProblema("[" + TCPController.instanceTCP.J2.text + "] cancelou a conexão");
-                return;
-            }
             try
             {
-                string str = TCPController.instanceTCP.R.ReadLine();
-                LerDoServidor = str ?? "desistencia";
+                str = TCPController.instanceTCP.R.ReadLine() ?? "exit";
+
+                Debug.Log("### PvP ### [" + str + "]");
+                if (str.ToLower().Contains("exit") || str.ToLower().Contains("desistencia"))
+                {
+                    Debug.Log("EXIT");
+                    ExitPvP();
+                    return;
+                }
+                else if (str.All(char.IsDigit) && str.Length == 9)
+                {
+                    Debug.Log("### AtualizarJogo ### [" + str + "]");
+                    attJogo = str;
+                    attJogoBool = true;
+                }
+                else if (str.ToLower().Contains("vez"))
+                {
+                    Debug.Log("[Minha vez]");
+                    GameController.instanceGameController.CanPlay = true;
+                }
+                else if (str.ToLower().Contains("vencedor"))
+                {
+                    Debug.Log("Vencedor");
+                    GameController.anunciarVencedor = str;
+                    GameController.instanceGameController.AnnounceWinner = true;
+                }
+                else if (str.ToLower().Contains("match"))
+                {
+                    Debug.Log("MATCH");
+                    GameController.instanceGameController.RestartMatchBool = true;
+                }
             }
             catch (Exception)
             {
-                LerDoServidor = "desistencia";
+                ErroDeConexao();
                 return;
             }
         }
-        Debug.Log("Thread Manager Finalizou");
+
+        Debug.Log("Thread PvP [Off]");
     }
 
-    public void Run()
+    public static void ErroDeConexao()
     {
-        if (GameController.instanceGameController.EsperandoOutroJogadorAceitarRevanche)
-            return;
-        Debug.Log("### PvP ### [" + LerDoServidor + "]");
-        if (LerDoServidor.ToLower().Contains("exit") || LerDoServidor.ToLower().Contains("desistencia"))
-        {
-            Debug.Log("EXIT");
-            GameController.instanceGameController.AnunciarProbleminha("Oponente desistiu");
-            TCPController.instanceTCP.CancelarConexa();
-            return;
-        }
-        else if (LerDoServidor.All(char.IsDigit) && LerDoServidor.Length == 9)
-        {
-            Debug.Log("AtualizarJogo: " + LerDoServidor);
-            GameController.instanceGameController.AtualizarJogo(LerDoServidor);
-        }
-        else if (LerDoServidor.ToLower().Contains("vez"))
-        {
-            Debug.Log("[vez]");
-            GameController.instanceGameController.PodeJogar = true;
-        }
-        else if (LerDoServidor.ToLower().Contains("vencedor"))
-        {
-            Debug.Log("Vencedor");
-            GameController.instanceGameController.AnunciarVencedor(LerDoServidor);
-        }
-        else if (LerDoServidor.ToLower().Contains("match"))
-        {
-            Debug.Log("MATCH");
-            GameController.instanceGameController.ResetarMatch();
-        }
-        LerDoServidor = "";
+        TCPController.TCPBeforePvPConnectionError = true;
+        TCPController.instanceTCP.PartidaEncontrada = false;
+        TCPController.instanceTCP.StatusDoJogador = TCPController.StatusDoJogadorEnum.Problema_de_conexão_tente_novamente;
+    }
+
+    public static void ExitPvP()
+    {
+        TCPController.TCPBeforePvPConnectionError = true;
+        TCPController.instanceTCP.PartidaEncontrada = false;
+        TCPController.instanceTCP.StatusDoJogador = TCPController.StatusDoJogadorEnum.Oponente_desistiu;
     }
 }

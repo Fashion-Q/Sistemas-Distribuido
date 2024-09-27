@@ -17,8 +17,14 @@ public class GameController : MonoBehaviour
     [SerializeField] private TextMeshProUGUI anunciarrVitoriaOuDerrotaText;
     [SerializeField] private GameObject acharPartida;
     [SerializeField] private GameObject desistirDaPartida;
-    public bool EsperandoOutroJogadorAceitarRevanche { get; set; } = false;
-    public void AnunciarProbleminha(string str)
+    public bool AnnounceWinner { get; set; } = false;
+    public bool RestartMatchBool { get; set; } = false;
+    public bool CanPlay { get; set; } = false;
+    public bool Cont15SecondsToCloseConnection { get; set; } = false;
+    private float ContFifteenSeconds { get; set; } = 0f;
+    
+    public static string anunciarVencedor = "";
+    public void AnunciarMensagem(string str)
     {
         esperandoOutroJogadorRevanche.SetActive(false);
         desejaContinuar.SetActive(false);
@@ -29,7 +35,6 @@ public class GameController : MonoBehaviour
     {
         anunciarProblemaObject.SetActive(ativarProbleminha);
     }
-    public bool PodeJogar { get; set; } = false;
 
     private void Awake()
     {
@@ -56,20 +61,31 @@ public class GameController : MonoBehaviour
     private void Update()
     {
         AlternarCorDeTexto();
+        if(AnnounceWinner)
+        {
+           AnnounceWinner = false;
+            AnunciarVencedor();
+        }
+        if(RestartMatchBool)
+        {
+            RestartMatchBool = false;
+            ResetarMatch();
+        }
     }
     public void AlternarCorDeTexto()
     {
-        if(TCPController.instanceTCP.PartidaEncontrada)
+        if (TCPController.instanceTCP.PartidaEncontrada)
         {
-            if (PodeJogar)
+            if (CanPlay)
             {
-                if(corTexto != InstanciaCorDeTexto.Jogando)
+                if (corTexto != InstanciaCorDeTexto.Jogando)
                 {
                     corTexto = InstanciaCorDeTexto.Jogando;
                     TCPController.instanceTCP.J1.color = Color.green;
                     TCPController.instanceTCP.J2.color = Color.white;
                 }
-            }else if (!PodeJogar)
+            }
+            else if (!CanPlay)
             {
                 if (corTexto != InstanciaCorDeTexto.Esperando)
                 {
@@ -80,7 +96,7 @@ public class GameController : MonoBehaviour
             }
 
         }
-        else if(corTexto != InstanciaCorDeTexto.Nenhum)
+        else if (corTexto != InstanciaCorDeTexto.Nenhum)
         {
             corTexto = InstanciaCorDeTexto.Nenhum;
             TCPController.instanceTCP.J1.color = Color.white;
@@ -89,20 +105,19 @@ public class GameController : MonoBehaviour
     }
     public void Jogar(int x, int y)
     {
-        Debug.Log("x: " + x + " | y: " + y);
         if (TCPController.instanceTCP.clienteSocket == null)
             return;
         if (!TCPController.instanceTCP.clienteSocket.Connected)
             return;
         if (TCPController.instanceTCP.Fluxo == null)
             return;
-        if (PodeJogar)
+        if (CanPlay)
         {
             if (!bola[x][y].activeSelf && !this.x[x][y].activeSelf)
             {
                 string str = x.ToString() + y.ToString();
                 Debug.Log("JOGANDO: " + x + " | " + y);
-                PodeJogar = false;
+                CanPlay = false;
                 TCPController.instanceTCP.WriterLine(str);
             }
         }
@@ -135,50 +150,52 @@ public class GameController : MonoBehaviour
         esperandoOutroJogadorRevanche.SetActive(false);
     }
 
-    public void AnunciarVencedor(string str)
+    public void AnunciarVencedor()
     {
-        if (str.ToLower().Contains("empate"))
+        Debug.Log("### ANUNCIAR VENCEDOR ### " + anunciarVencedor);
+        if (anunciarVencedor.ToLower().Contains("empate"))
         {
-            str = "### EMPATE ###";
+            anunciarVencedor = "### EMPATE ###";
         }
-        else if (PvP.instancePvP.EstouJogandoComBola && str.ToLower().Contains("bola"))
+        else if (PvP.instancePvP.EstouJogandoComBola && anunciarVencedor.ToLower().Contains("bola"))
         {
-            str = "### Parabéns! Você ganhou ###";
+            anunciarVencedor = "### Parabéns! Você ganhou ###";
             ponto1.text = (int.Parse(ponto1.text) + 1).ToString();
             Debug.Log("+1");
         }
-        else if (!PvP.instancePvP.EstouJogandoComBola && str.ToLower().Contains("x"))
+        else if (!PvP.instancePvP.EstouJogandoComBola && anunciarVencedor.ToLower().Contains("x"))
         {
-            str = "### Parabéns! Você ganhou ###";
+            anunciarVencedor = "### Parabéns! Você ganhou ###";
             ponto1.text = (int.Parse(ponto1.text) + 1).ToString();
             Debug.Log("+1");
         }
         else
         {
-            str = "### Você perdeu! ###";
+            anunciarVencedor = "### Você perdeu! ###";
             Debug.Log("+1 inimigo");
             ponto2.text = (int.Parse(ponto1.text) + 1).ToString();
         }
-        anunciarrVitoriaOuDerrotaText.text = str;
+        anunciarrVitoriaOuDerrotaText.text = anunciarVencedor;
         desejaContinuar.SetActive(true);
     }
 
     public void DesejaContinuar(string str)
     {
         desejaContinuar.SetActive(false);
+        Debug.Log("### Deseja Continuar ### " + str);
         if (str.ToLower().Contains("n"))
         {
             TCPController.instanceTCP.CancelarConexa();
         }
         else
         {
-            if(TCPController.instanceTCP.clienteSocket.Connected)
+            try
             {
                 TCPController.instanceTCP.WriterLine(str);
                 esperandoOutroJogadorRevanche.SetActive(true);
-                EsperandoOutroJogadorAceitarRevanche = false;
+                Debug.Log("### MATCH AGAIN -> PvP Thread ### " + str);
             }
-            else
+            catch
             {
                 TCPController.instanceTCP.CancelarConexa();
             }
@@ -214,7 +231,7 @@ public class GameController : MonoBehaviour
 
     public void AtualizarBotaoPrincipal(bool ativarAcharPartida)
     {
-        if(TCPController.instanceTCP.PartidaEncontrada || !ativarAcharPartida)
+        if (TCPController.instanceTCP.PartidaEncontrada || !ativarAcharPartida)
         {
             acharPartida.SetActive(false);
             desistirDaPartida.SetActive(true);
@@ -226,12 +243,6 @@ public class GameController : MonoBehaviour
         }
     }
 
-    public void AnuncinarProblema(string str)
-    {
-        Debug.Log("ANUNCIAR PROBLEMA");
-        anunciarProblemaObject.SetActive(true);
-        anunciarProblemaText.text = str;
-    }
     public void ResetarPontuacao()
     {
         ponto1.text = "0";
